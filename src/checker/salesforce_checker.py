@@ -1,47 +1,40 @@
+import json
 import os
 from datetime import date
+from time import sleep
 
-from src.checker.salesforce_client import SalesforceDownloader
-from src.checker.salesforce_query import generate_salesforce_query
+import pandas as pd
+from salesforce_bulk import SalesforceBulk
+from salesforce_bulk.util import IteratorBytesIO
 
 
 class SalesforceBulkQuery:
 
     def __init__(self, instance: str):
         if instance == "origin":
-            self.salesforce_client = SalesforceDownloader(
-                client_id=os.getenv("SF_D2C_BETA_CLIENT_ID"),
-                client_secret=os.getenv("SF_D2C_BETA_CLIENT_SECRET"),
-                username_salesforce=os.getenv("SF_D2C_BETA_USERNAME"),
-                password_salesforce=os.getenv("SF_D2C_BETA_PASSWORD"),
-                security_token_salesforce=os.getenv("SF_D2C_BETA_SECURITY_TOKEN"),
-                sf_url=os.getenv("SF_BETA_URL")
-            )
+            self.bulk = SalesforceBulk(username=os.getenv("SF_D2C_BETA_USERNAME"),
+                                       password=os.getenv("SF_D2C_BETA_PASSWORD"),
+                                       security_token=os.getenv("SF_D2C_BETA_SECURITY_TOKEN"),
+                                       client_id=os.getenv("SF_D2C_BETA_CLIENT_ID"),
+                                       domain="test"
+                                       )
         else:
-            self.salesforce_client = SalesforceDownloader(
-                client_id=os.getenv("SF_AON_US_BETA_CLIENT_ID"),
-                client_secret=os.getenv("SF_AON_US_BETA_CLIENT_SECRET"),
-                username_salesforce=os.getenv("SF_AON_US_BETA_USERNAME"),
-                password_salesforce=os.getenv("SF_AON_US_BETA_PASSWORD"),
-                security_token_salesforce=os.getenv("SF_AON_US_BETA_SECURITY_TOKEN"),
-                sf_url=os.getenv("SF_BETA_URL")
-            )
+            self.bulk = SalesforceBulk(username=os.getenv("SF_AON_US_BETA_USERNAME"),
+                                       password=os.getenv("SF_AON_US_BETA_PASSWORD"),
+                                       security_token=os.getenv("SF_AON_US_BETA_SECURITY_TOKEN"),
+                                       client_id=os.getenv("SF_AON_US_BETA_CLIENT_ID"),
+                                       domain="test"
+                                       )
 
     def query(self, object_name: str, start_date: date = None, end_date: date = None):
-        salesforce_object_columns = self.salesforce_client.get_object_schema(salesforce_object=object_name)
-        query = generate_salesforce_query(salesforce_columns=salesforce_object_columns, salesforce_object=object_name,
-                                          update_field="test", start_date=start_date, end_date=end_date)
-        results = self.salesforce_client.query_salesforce_data(query=query, get_deleted_records=True)
-        for result in results:
-            print(result)
-        return result
+        job = self.bulk.create_query_job(object_name, contentType='JSON')
+        batch = self.bulk.query(job, f"SELECT Id, Phone FROM {object_name} LIMIT 10")
+        self.bulk.close_job(job)
+        while not self.bulk.is_batch_done(batch):
+            sleep(10)
 
-
-class SalesforceChecker:
-
-    def check(self, object_name: str, start_date: date = None, end_date: date = None):
-        salesforce_bulk_query_origin = SalesforceBulkQuery("origin")
-        result_origin = salesforce_bulk_query_origin.query(object_name, start_date, end_date)
-
-        salesforce_bulk_query_destination = SalesforceBulkQuery("destination")
-        result_destination = salesforce_bulk_query_destination.query(object_name, start_date, end_date)
+        for result in self.bulk.get_all_results_for_query_batch(batch):
+            result = json.load(IteratorBytesIO(result))
+            for row in result:
+                print(row)
+        return pd.DataFrame(result)

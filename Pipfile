@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pandas= "1.3.1"
+salesforce-bulk = "2.2.0"
 self = "*"
 subprocess32 = "*"
 
