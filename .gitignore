@@ -151,5 +151,5 @@ crashlytics-build.properties
 fabric.properties
 
 #custom
-.iml
-misc.xml
+*.iml
+.idea/misc.xml
