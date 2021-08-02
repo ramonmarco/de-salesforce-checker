@@ -20,4 +20,5 @@ def run_check(object_name: str, start_date: date = None, end_date: date = None):
 
 if __name__ == '__main__':
     kwargs = cli.cli()
-    run_check(**kwargs)
+    result = run_check(**kwargs)
+    print(result)
