@@ -35,13 +35,3 @@ class SalesforceBulkQuery:
         for result in results:
             print(result)
         return result
-
-
-class SalesforceChecker:
-
-    def check(self, object_name: str, start_date: date = None, end_date: date = None):
-        salesforce_bulk_query_origin = SalesforceBulkQuery("origin")
-        result_origin = salesforce_bulk_query_origin.query(object_name, start_date, end_date)
-
-        salesforce_bulk_query_destination = SalesforceBulkQuery("destination")
-        result_destination = salesforce_bulk_query_destination.query(object_name, start_date, end_date)
