@@ -4,6 +4,8 @@ from datetime import date
 import pandas as pd
 from simple_salesforce import Salesforce, format_soql
 
+from src.checker.salesforce_query import generate_salesforce_query
+
 
 class SalesforceBulkQuery:
 
@@ -24,8 +26,8 @@ class SalesforceBulkQuery:
                                  )
 
     def query(self, object_name: str, start_date: date = None, end_date: date = None):
-        desc = self.sf.Account.describe()
-        field_names = [field['name'] for field in desc['fields']]
-        soql = "SELECT {} FROM ".format(','.join(field_names)) + object_name + " LIMIT 10"
-        results = self.sf.query(format_soql(soql))
+        salesforce_object_columns = self.sf.Account.describe()
+        query = generate_salesforce_query(salesforce_columns=salesforce_object_columns, salesforce_object=object_name,
+                                          update_field="test", start_date=start_date, end_date=end_date)
+        results = self.sf.query(format_soql(query))
         return pd.DataFrame(results)
