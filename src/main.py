@@ -21,4 +21,5 @@ def run_check(object_name: str, start_date: date = None, end_date: date = None):
 if __name__ == '__main__':
     kwargs = cli.cli()
     result = run_check(**kwargs)
+    print("Comparison result: ")
     print(result)

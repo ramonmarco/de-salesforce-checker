@@ -2,7 +2,7 @@ import os
 from datetime import date
 
 import pandas as pd
-from simple_salesforce import Salesforce
+from simple_salesforce import Salesforce, format_soql
 
 
 class SalesforceBulkQuery:
@@ -24,7 +24,8 @@ class SalesforceBulkQuery:
                                  )
 
     def query(self, object_name: str, start_date: date = None, end_date: date = None):
-        results = self.sf.bulk.Account.query(f"SELECT Id, Phone FROM {object_name} LIMIT 10")
-        for result in results:
-            print(result)
+        desc = self.sf.Account.describe()
+        field_names = [field['name'] for field in desc['fields']]
+        soql = "SELECT {} FROM ".format(','.join(field_names)) + object_name + " LIMIT 10"
+        results = self.sf.query(format_soql(soql))
         return pd.DataFrame(results)
